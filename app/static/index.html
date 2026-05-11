@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcription</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #18181c;
+      --border: #2a2a30;
+      --text: #e4e4e7;
+      --muted: #71717a;
+      --accent: #22c55e;
+      --accent-hover: #16a34a;
+      --error: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      letter-spacing: -0.02em;
+    }
+    .container {
+      width: 100%;
+      max-width: 560px;
+    }
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .tab {
+      padding: 0.6rem 1.2rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: var(--text); border-color: var(--text); }
+    .tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--surface);
+      margin-bottom: 1rem;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(34, 197, 94, 0.05);
+    }
+    .dropzone input { display: none; }
+    .dropzone .icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.7;
+    }
+    .dropzone p { color: var(--muted); font-size: 0.95rem; }
+    .url-input {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    .url-input::placeholder { color: var(--muted); }
+    .url-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .options {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .options label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .options select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 0.4rem 0.75rem;
+      font-family: inherit;
+    }
+    .btn {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: var(--accent);
+      color: #0f0f12;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn:disabled {
+      background: var(--border);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: none;
+    }
+    .result.visible { display: block; }
+    .result h3 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: var(--accent);
+    }
+    .result pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .status {
+      padding: 1rem;
+      background: var(--surface);
+      border-radius: 10px;
+      margin-top: 1rem;
+      display: none;
+    }
+    .status.visible { display: block; }
+    .status.processing { border-left: 4px solid var(--accent); }
+    .status.error { border-left: 4px solid var(--error); }
+    .status p { font-size: 0.9rem; }
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Transcription</h1>
+    <div class="tabs">
+      <button class="tab active" data-tab="file">Upload file</button>
+      <button class="tab" data-tab="url">From URL</button>
+    </div>
+
+    <div id="panel-file" class="panel active">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="audio/*,video/*,.mp4,.mp3,.wav,.m4a,.webm,.avi,.mov,.mkv,.flv,.m4v">
+        <div class="icon">📁</div>
+        <p>Drag & drop audio or video here, or click to browse</p>
+      </div>
+      <div class="options">
+        <label>
+          Language:
+          <select id="langFile">
+            <option value="ru">Russian</option>
+</body>
+</html>
