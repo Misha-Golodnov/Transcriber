@@ -273,6 +273,41 @@
         dropzone.querySelector('p').textContent = f.name;
       }
     });
+    fileInput.addEventListener('change', (e) => {
+      selectedFile = e.target.files[0] || null;
+      btnUpload.disabled = !selectedFile;
+      if (selectedFile) dropzone.querySelector('p').textContent = selectedFile.name;
+    });
+
+    function showStatus(msg, type = '') {
+      statusEl.className = 'status visible ' + type;
+      statusEl.innerHTML = msg;
+    }
+
+    function statusMsg(data) {
+      const pos = data.position;
+      if (data.status === 'processing') return '<span class="spinner"></span> Processing...';
+      if (pos !== undefined && pos > 0) return '<span class="spinner"></span> Queue position: ' + pos;
+      return '<span class="spinner"></span> Processing...';
+    }
+
+    function pollResult(jobId, lang) {
+      showStatus('<span class="spinner"></span> Submitting...', 'processing');
+
+      const poll = () => {
+        fetch('/api/status/' + jobId)
+          .then(r => r.json())
+          .then(data => {
+            if (data.status === 'completed') {
+              resultEl.classList.add('visible');
+              resultText.textContent = data.result?.full_text || '(empty)';
+              showStatus('<p>Done.</p>', '');
+            } else if (data.status === 'failed') {
+              showStatus('<p>Error: ' + (data.error || 'Unknown error') + '</p>', 'error');
+            } else {
+              showStatus(statusMsg(data), 'processing');
+              setTimeout(poll, 2000);
+            }
   </script>
 </body>
 </html>
