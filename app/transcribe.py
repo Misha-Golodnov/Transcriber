@@ -78,3 +78,81 @@ def preload_model(model_name: str = "large-v2", language: str | None = "ru"):
     return _model_cache[key]
 
 
+def load_audio(audio_path: str):
+    """Load audio as float32 numpy at 16kHz."""
+    import numpy as np
+    try:
+        import soundfile as sf
+        data, sr = sf.read(audio_path)
+        if len(data.shape) > 1:
+            data = data[:, 0]
+        if sr != 16000:
+            import librosa
+            data = librosa.resample(data.astype(float), orig_sr=sr, target_sr=16000)
+        return np.array(data, dtype="float32")
+    except Exception:
+        pass
+    try:
+        import librosa
+        audio, _ = librosa.load(audio_path, sr=16000, mono=True)
+        return audio.astype("float32")
+    except Exception:
+        return None
+
+
+def transcribe(
+    input_path: str,
+    language: str = "ru",
+    model_name: str = "large-v2",
+) -> dict:
+    """
+    Transcribe audio/video file. Same flow as notebook.
+    Returns dict with segments and full text.
+    """
+    logger.info("[transcribe] start: input_path=%s language=%s", input_path, language)
+    input_path = Path(input_path).resolve()
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input not found: {input_path}")
+
+    video_extensions = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm", ".m4v"}
+    if input_path.suffix.lower() in video_extensions:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            audio_path = f.name
+        try:
+            if not extract_audio(str(input_path), audio_path):
+                raise RuntimeError("Failed to extract audio from video")
+        except Exception as e:
+            if os.path.exists(audio_path):
+                os.unlink(audio_path)
+            raise e
+    else:
+        audio_path = str(input_path)
+
+    try:
+        logger.info("[transcribe] loading model: model_name=%s", model_name)
+        model = preload_model(model_name=model_name, language=language)
+        logger.info("[transcribe] model loaded, loading audio: %s", audio_path)
+        audio = load_audio(audio_path)
+        if audio is None:
+            raise RuntimeError("Failed to load audio")
+        logger.info("[transcribe] audio loaded: %d samples, running inference", len(audio))
+
+        lang = None if language == "auto" else language
+        segment_list, info = model.transcribe(audio, language=lang)
+        logger.info("[transcribe] inference done")
+
+        segments = [
+            {"start": s.start, "end": s.end, "text": (s.text or "").strip()}
+            for s in segment_list
+        ]
+        full_text = "\n".join(s["text"] for s in segments if s["text"])
+        detected_lang = info.language if info else language
+
+        return {
+            "language": detected_lang or language,
+            "segments": segments,
+            "full_text": full_text,
+        }
+    finally:
+        if audio_path != str(input_path) and os.path.exists(audio_path):
+            os.unlink(audio_path)

@@ -308,6 +308,55 @@
               showStatus(statusMsg(data), 'processing');
               setTimeout(poll, 2000);
             }
+          })
+          .catch(err => showStatus('<p>Error: ' + err.message + '</p>', 'error'));
+      };
+      poll();
+    }
+
+    btnUpload.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      btnUpload.disabled = true;
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('language', document.getElementById('langFile').value);
+
+      try {
+        const r = await fetch('/api/transcribe/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || 'Upload failed');
+        pollResult(data.job_id, 'file');
+      } catch (err) {
+        showStatus('<p>Error: ' + err.message + '</p>', 'error');
+      }
+      btnUpload.disabled = false;
+    });
+
+    btnUrl.addEventListener('click', async () => {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      btnUrl.disabled = true;
+
+      try {
+        const formData = new FormData();
+        formData.append('url', url);
+        formData.append('language', document.getElementById('langUrl').value);
+
+        const r = await fetch('/api/transcribe/url', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || 'Request failed');
+        pollResult(data.job_id, 'url');
+      } catch (err) {
+        showStatus('<p>Error: ' + err.message + '</p>', 'error');
+      }
+      btnUrl.disabled = false;
+    });
   </script>
 </body>
 </html>
