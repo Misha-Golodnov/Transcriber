@@ -83,7 +83,7 @@ app = FastAPI(title="Transcription API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -95,7 +95,8 @@ async def transcribe_from_url(
     language: str = Form("ru"),
 ):
     """Submit a URL for transcription. Returns job_id to poll for result."""
-    logger.info("[api] transcribe_from_url: url=%s", url[:80] + "..." if len(url) > 80 else url)
+    logger.info("[api] transcribe_from_url: url=%s",
+                url[:80] + "..." if len(url) > 80 else url)
     filepath = UPLOAD_DIR / f"{uuid.uuid4()}.wav"
     try:
         await asyncio.to_thread(extract_audio_from_url, url, filepath)
@@ -126,13 +127,15 @@ async def transcribe_from_upload(
     filepath = UPLOAD_DIR / f"{job_id}{ext}"
 
     try:
-        logger.info("[api] transcribe_from_upload: writing file to %s", filepath)
+        logger.info(
+            "[api] transcribe_from_upload: writing file to %s", filepath)
         size = 0
         async with aiofiles.open(filepath, "wb") as f:
             while chunk := await file.read(8192):
                 await f.write(chunk)
                 size += len(chunk)
-        logger.info("[api] transcribe_from_upload: file write complete, size=%d", size)
+        logger.info(
+            "[api] transcribe_from_upload: file write complete, size=%d", size)
     except Exception as e:
         if filepath.exists():
             filepath.unlink(missing_ok=True)
@@ -168,7 +171,8 @@ async def get_result(job_id: str):
     if status["status"] == "completed":
         return status["result"]
     if status["status"] == "failed":
-        raise HTTPException(status_code=500, detail=status.get("error", "Transcription failed"))
+        raise HTTPException(status_code=500, detail=status.get(
+            "error", "Transcription failed"))
     return {"status": status["status"], "position": status.get("position"), "message": "Still processing"}
 
 
