@@ -1,0 +1,24 @@
+services:
+  transcribe:
+    build: .
+    init: true  # Proper PID 1 for multiprocessing (avoids Pyannote VAD hangs in Docker)
+    ports:
+      - "8000:8000"
+    volumes:
+      - model_cache:/cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - HF_HOME=/cache/huggingface
+      - TORCH_HOME=/cache/torch
+      - XDG_CACHE_HOME=/cache
+      - HF_TOKEN=...
+      - TELEGRAM_BOT_TOKEN=...
+
+volumes:
+  model_cache:
