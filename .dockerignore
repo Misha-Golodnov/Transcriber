@@ -1,0 +1,12 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.idea
+*.ipynb
+videos/
+transcriptions/
+*.wav
+*.mp4
+.env
+# Keep pip-cache in context for build bind mount (don't ignore it)
