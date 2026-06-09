@@ -1,6 +1,6 @@
 # Transcription: faster-whisper (lightweight, no PyTorch/pyannote/speechbrain)
 faster-whisper>=1.1.1
-ctranslate2<4.5.0
+ctranslate2>=4.3.0,<4.7.0
 
 # Web API
 fastapi>=0.109.0

@@ -1,2 +1,2 @@
-# ctranslate2<4.5.0 for CUDA 12.1 compatibility (cuDNN 9 needs CUDA 12.3+)
-ctranslate2<4.5.0
+# Keep ctranslate2 in a range available on PyPI for CI and local installs.
+ctranslate2>=4.3.0,<4.7.0
