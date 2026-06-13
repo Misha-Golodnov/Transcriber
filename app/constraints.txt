@@ -1,0 +1,2 @@
+# ctranslate2<4.5.0 for CUDA 12.1 compatibility (cuDNN 9 needs CUDA 12.3+)
+ctranslate2<4.5.0
