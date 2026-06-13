@@ -208,5 +208,71 @@
           Language:
           <select id="langFile">
             <option value="ru">Russian</option>
+            <option value="en">English</option>
+            <option value="auto">Auto-detect</option>
+          </select>
+        </label>
+      </div>
+      <button class="btn" id="btnUpload" disabled>Transcribe</button>
+    </div>
+
+    <div id="panel-url" class="panel">
+      <input type="url" class="url-input" id="urlInput" placeholder="https://example.com/audio.mp3 or video URL">
+      <div class="options">
+        <label>
+          Language:
+          <select id="langUrl">
+            <option value="ru">Russian</option>
+            <option value="en">English</option>
+            <option value="auto">Auto-detect</option>
+          </select>
+        </label>
+      </div>
+      <button class="btn" id="btnUrl">Transcribe from URL</button>
+    </div>
+
+    <div class="status" id="status"></div>
+    <div class="result" id="result">
+      <h3>Transcription</h3>
+      <pre id="resultText"></pre>
+    </div>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const btnUpload = document.getElementById('btnUpload');
+    const urlInput = document.getElementById('urlInput');
+    const btnUrl = document.getElementById('btnUrl');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+    const resultText = document.getElementById('resultText');
+
+    let selectedFile = null;
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const f = e.dataTransfer.files[0];
+      const validExt = /\.(mp4|mp3|wav|m4a|webm|avi|mov|mkv|flv|m4v|ogg|aac)$/i;
+      if (f && (f.type.startsWith('audio/') || f.type.startsWith('video/') || validExt.test(f.name))) {
+        selectedFile = f;
+        btnUpload.disabled = false;
+        dropzone.querySelector('p').textContent = f.name;
+      }
+    });
+  </script>
 </body>
 </html>
