@@ -49,7 +49,7 @@ def create_router(queue, upload_dir: str) -> Router:
 
         pos = queue.get_status(job_id)
         position = pos.get("position", 0)
-        if position == 1:
+        if position == 0:
             msg = "🎙️ Processing your voice message..."
         else:
             msg = f"🎙️ Queued at position {position}. I'll send the transcription when ready."
