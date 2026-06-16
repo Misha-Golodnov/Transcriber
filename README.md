@@ -11,7 +11,7 @@ Docker-приложение для расшифровки аудио и виде
 ## Быстрый старт
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 # Откройте http://localhost:8000
 ```
 
