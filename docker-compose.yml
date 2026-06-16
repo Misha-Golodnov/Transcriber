@@ -17,8 +17,9 @@ services:
       - HF_HOME=/cache/huggingface
       - TORCH_HOME=/cache/torch
       - XDG_CACHE_HOME=/cache
-      - HF_TOKEN=...
-      - TELEGRAM_BOT_TOKEN=...
+      - HF_TOKEN=${HF_TOKEN:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - WHISPER_DEVICE=${WHISPER_DEVICE:-cuda}
 
 volumes:
   model_cache:

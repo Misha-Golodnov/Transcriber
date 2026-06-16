@@ -1,3 +1,5 @@
+.env
+
 pip-cache/*
 !pip-cache/.gitkeep
 
