@@ -242,13 +242,103 @@
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
     const btnUpload = document.getElementById('btnUpload');
+    const langFile = document.getElementById('langFile');
     const urlInput = document.getElementById('urlInput');
     const btnUrl = document.getElementById('btnUrl');
+    const langUrl = document.getElementById('langUrl');
     const statusEl = document.getElementById('status');
     const resultEl = document.getElementById('result');
     const resultText = document.getElementById('resultText');
 
     let selectedFile = null;
+    let pollTimer = null;
+
+    const validExt = /\.(mp4|mp3|wav|m4a|webm|avi|mov|mkv|flv|m4v|ogg|aac)$/i;
+
+    function isValidFile(f) {
+      return f && (f.type.startsWith('audio/') || f.type.startsWith('video/') || validExt.test(f.name));
+    }
+
+    function selectFile(f) {
+      if (!isValidFile(f)) return;
+      selectedFile = f;
+      btnUpload.disabled = false;
+      dropzone.querySelector('p').textContent = f.name;
+    }
+
+    function showStatus(html, type) {
+      statusEl.className = 'status visible' + (type ? ' ' + type : '');
+      statusEl.innerHTML = html;
+    }
+
+    function hideStatus() {
+      statusEl.className = 'status';
+      statusEl.innerHTML = '';
+    }
+
+    function showResult(text) {
+      resultText.textContent = text;
+      resultEl.classList.add('visible');
+    }
+
+    function hideResult() {
+      resultEl.classList.remove('visible');
+      resultText.textContent = '';
+    }
+
+    function setBusy(busy) {
+      btnUpload.disabled = busy || !selectedFile;
+      btnUrl.disabled = busy;
+    }
+
+    async function pollJob(jobId) {
+      if (pollTimer) clearInterval(pollTimer);
+
+      async function check() {
+        const statusRes = await fetch('/api/status/' + jobId);
+        if (!statusRes.ok) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          setBusy(false);
+          showStatus('<p>Job not found.</p>', 'error');
+          return;
+        }
+
+        const status = await statusRes.json();
+        if (status.status === 'completed') {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          const resultRes = await fetch('/api/result/' + jobId);
+          setBusy(false);
+          if (!resultRes.ok) {
+            const err = await resultRes.json().catch(() => ({}));
+            showStatus('<p>' + (err.detail || 'Failed to load result') + '</p>', 'error');
+            return;
+          }
+          const result = await resultRes.json();
+          hideStatus();
+          showResult(result.full_text || '(empty)');
+          return;
+        }
+
+        if (status.status === 'failed') {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          setBusy(false);
+          showStatus('<p>' + (status.error || 'Transcription failed') + '</p>', 'error');
+          return;
+        }
+
+        const pos = status.position > 0 ? ' (queue position: ' + status.position + ')' : '';
+        showStatus(
+          '<span class="spinner"></span> ' + status.status + pos + '…',
+          'processing'
+        );
+      }
+
+      await check();
+      pollTimer = setInterval(check, 2000);
+    }
 
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -265,12 +355,65 @@
     dropzone.addEventListener('drop', (e) => {
       e.preventDefault();
       dropzone.classList.remove('dragover');
-      const f = e.dataTransfer.files[0];
-      const validExt = /\.(mp4|mp3|wav|m4a|webm|avi|mov|mkv|flv|m4v|ogg|aac)$/i;
-      if (f && (f.type.startsWith('audio/') || f.type.startsWith('video/') || validExt.test(f.name))) {
-        selectedFile = f;
-        btnUpload.disabled = false;
-        dropzone.querySelector('p').textContent = f.name;
+      selectFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', () => {
+      selectFile(fileInput.files[0]);
+      fileInput.value = '';
+    });
+
+    btnUpload.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      hideResult();
+      setBusy(true);
+      showStatus('<span class="spinner"></span> Uploading…', 'processing');
+
+      const form = new FormData();
+      form.append('file', selectedFile);
+      form.append('language', langFile.value);
+
+      try {
+        const res = await fetch('/api/transcribe/upload', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) {
+          setBusy(false);
+          showStatus('<p>' + (data.detail || 'Upload failed') + '</p>', 'error');
+          return;
+        }
+        await pollJob(data.job_id);
+      } catch (e) {
+        setBusy(false);
+        showStatus('<p>Network error: ' + e.message + '</p>', 'error');
+      }
+    });
+
+    btnUrl.addEventListener('click', async () => {
+      const url = urlInput.value.trim();
+      if (!url) {
+        showStatus('<p>Please enter a URL.</p>', 'error');
+        return;
+      }
+      hideResult();
+      setBusy(true);
+      showStatus('<span class="spinner"></span> Downloading audio…', 'processing');
+
+      const form = new FormData();
+      form.append('url', url);
+      form.append('language', langUrl.value);
+
+      try {
+        const res = await fetch('/api/transcribe/url', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) {
+          setBusy(false);
+          showStatus('<p>' + (data.detail || 'Request failed') + '</p>', 'error');
+          return;
+        }
+        await pollJob(data.job_id);
+      } catch (e) {
+        setBusy(false);
+        showStatus('<p>Network error: ' + e.message + '</p>', 'error');
       }
     });
   </script>
